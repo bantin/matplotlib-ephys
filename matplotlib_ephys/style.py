@@ -3,9 +3,8 @@ from dataclasses import dataclass
 
 
 @dataclass
-class ExploreStyle:
-    """ Default class used to configure the aspect of the ephys plots. All other Style classes
-    should inherit from this class.
+class Style:
+    """Abstract class listing the existing settings
 
     Args:
         shared_axis (bool): if True, the voltage and current traces are plotted on the same axis.
@@ -16,8 +15,11 @@ class ExploreStyle:
         voltage_alpha (float): transparency of the voltage traces.
         current_color (str): color of the current traces.
         current_alpha (float): transparency of the current traces.
+        wrap_title (bool): should the title be wrapped at 50 characters if too long. Put False if
+            you formatted the title yourself.
         title_fontsize (float): fontsize of the title.
         scale_bars_fontsize (float): fontsize of the scale bar labels.
+        label_fontsize (float): fontsize of the labels.
     """
 
     shared_axis: bool = False
@@ -38,23 +40,34 @@ class ExploreStyle:
     label_fontsize: int = 12.
 
 
-@dataclass
-class PaperStyle(ExploreStyle):
-    """ Paper class to display voltage traces without splines and with scale bars."""
+# Style useful for data exploration, with splines
+explorer_style = Style(
+    shared_axis=False,
+    show_spines=True,
+    scale_bars=False,
+    linewidth=1.,
+    voltage_color="black",
+    voltage_alpha=1.,
+    current_color="gray",
+    current_alpha=1.,
+    wrap_title=True,
+    title_fontsize=14.,
+    scale_bars_fontsize=10.,
+    label_fontsize=12.,
+)
 
-    shared_axis: bool = True
-    show_spines: bool = False
-    scale_bars: bool = True
-
-    linewidth: int = 1.
-
-    voltage_color: str = "black"
-    voltage_alpha: float = 0.9
-    current_color: str = "red"
-    current_alpha: float = 0.9
-
-    wrap_title: bool = True
-    title_fontsize: int = 14.
-
-    scale_bars_fontsize: int = 10.
-    label_fontsize: int = 12.
+# For publications, class to display voltage traces without splines and with scale bars
+paper_style = Style(
+    shared_axis=True,
+    show_spines=False,
+    scale_bars=True,
+    linewidth=1.,
+    voltage_color="black",
+    voltage_alpha=0.9,
+    current_color="red",
+    current_alpha=0.9,
+    wrap_title=True,
+    title_fontsize=14.,
+    scale_bars_fontsize=10.,
+    label_fontsize=12.,
+)

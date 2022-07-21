@@ -54,7 +54,6 @@ def test_plotting_multiple_ephys():
 
     for style in ["explore", "paper"]:
 
-        print(data[:, 0].shape)
         # Plot without current
         fig, axis = plot_traces(
             data[:, 0],

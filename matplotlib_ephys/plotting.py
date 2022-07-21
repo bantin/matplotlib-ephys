@@ -19,18 +19,23 @@ def define_style(style="explore"):
     """Define the plotting style.
 
     Args:
-        style (str or Style): if str, specifies the name of the style to use (amongst: "explore",
-            "paper"). If Style, returns the Style object. Warning: these styles are different
-            from the matplotlib styles.
+        style (str, Style or dict): if str, specifies the name of the style to use (amongst:
+            "explore", "paper"). If Style, returns the Style object. If dict, uses the dict to
+            instantiate a Style object. Warning: these styles are different from the matplotlib
+            styles.
     """
 
     if isinstance(style, str):
         if style == "explore":
-            style = ExploreStyle()
+            style = explorer_style
         elif style == "paper":
-            style = PaperStyle()
+            style = paper_style
         else:
             raise ValueError("Unknown style: {}".format(style))
+    elif isinstance(style, dict):
+        style = Style(**style)
+    elif not isinstance(style, Style):
+        raise ValueError(f"Unknown style of type {type(style)}")
 
     return style
 
@@ -257,9 +262,9 @@ def plot_trace(
         current_series (list or numpy.array): current series in nA.
         title (str): title of the plot.
         axis (axis or list of axis): matplotlib axis on which to plot.
-        style (str or Style): if str, specifies the name of the style to use (amongst: "explore",
-            "paper"). If Style, returns the Style object. Warning: these styles are different
-            from the matplotlib styles.
+        style (str, Style or dict): if str, specifies the name of the style to use (amongst:
+            "explore", "paper"). If dict, uses the dict to instantiate a Style object. Warning:
+            these styles are different from the matplotlib styles.
     """
 
     style = define_style(style)
@@ -344,10 +349,12 @@ def plot_traces(
         voltage_series (list of list or numpy.array): multiple voltage series in mV.
         current_series (list of list or numpy.array): multiple current series in nA.
         title (str): title of the plot.
-        axis (axis or list of axis): matplotlib axis on which to plot.
-        style (str or Style): if str, specifies the name of the style to use (amongst: "explore",
-            "paper"). If Style, returns the Style object. Warning: these styles are different
-            from the matplotlib styles.
+        axis (axis or list of axis): matplotlib axis on which to plot. If None, a new figure is
+            created. If current is to be plotted and shared_axis is False, the axis must be a
+            list and the current will be plotted on the first axis of the list.
+        style (str, Style or dict): if str, specifies the name of the style to use (amongst:
+            "explore", "paper"). If dict, uses the dict to instantiate a Style object. Warning:
+            these styles are different from the matplotlib styles.
     """
 
     if len(time_series) != len(voltage_series):
