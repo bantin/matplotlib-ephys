@@ -1,27 +1,91 @@
 """Testing plotting functions"""
 import numpy
+import glob
 import matplotlib.pyplot as plt
+from matplotlib_ephys import plot_trace, plot_traces
 
-from matplotlib_ephys import plot_trace
+
+def test_plotting_single_ephys():
+
+    for i, file in enumerate(glob.glob("./test_data_*.npy")):
+
+        data = numpy.load(file)
+
+        for style in ["explore", "paper"]:
+
+            # Plot without current
+            fig, axis = plot_trace(
+                data[0],
+                data[2],
+                style=style
+            )
+            plt.savefig(f"test_plot_trace_{style}_{i}_nocurrent.png")
+            plt.close(fig)
+
+            # Plot with current
+            fig, axis = plot_trace(
+                data[0],
+                data[2],
+                data[1],
+                style=style
+            )
+            plt.savefig(f"test_plot_trace_{style}_{i}.png")
+            plt.close(fig)
+
+            # Plot with current and long title
+            fig, axis = plot_trace(
+                data[0],
+                data[2],
+                data[1],
+                style=style,
+                title="This is an extremely long title that should really "
+                      "not exist but we will see what happens"
+            )
+            plt.savefig(f"test_plot_trace_{style}_{i}_title.png")
+            plt.close(fig)
 
 
-def test_plotting():
+def test_plotting_multiple_ephys():
 
-    # Test that the function plot_trace works
-    time_series = numpy.arange(0, 1000, 1)
-    voltage_series = (numpy.random.random(size=1000) + 140.) - 70.
-    current_series = numpy.random.random(size=1000) * 0.3
+    data = []
+    for i, file in enumerate(glob.glob("./test_data_*.npy")):
+        data.append(numpy.load(file))
+    data = numpy.array(data)
 
     for style in ["explore", "paper"]:
-        fig, axis = plot_trace(
-            time_series,
-            voltage_series,
-            current_series,
+
+        print(data[:, 0].shape)
+        # Plot without current
+        fig, axis = plot_traces(
+            data[:, 0],
+            data[:, 2],
             style=style
         )
-        plt.savefig(f"test_plot_trace_{style}.png")
-        plt.show()
+        plt.savefig(f"test_plot_multiple_traces_{style}_nocurrent.png")
+        plt.close(fig)
+
+        # Plot with current
+        fig, axis = plot_traces(
+            data[:, 0],
+            data[:, 2],
+            data[:, 1],
+            style=style
+        )
+        plt.savefig(f"test_plot_multiple_traces_{style}.png")
+        plt.close(fig)
+
+        # Plot with current and long title
+        fig, axis = plot_traces(
+            data[:, 0],
+            data[:, 2],
+            data[:, 1],
+            style=style,
+            title="This is an extremely long title that should really "
+                "not exist but we will see what happens"
+        )
+        plt.savefig(f"test_plot_multiple_traces_{style}_title.png")
         plt.close(fig)
 
 
-test_plotting()
+test_plotting_single_ephys()
+test_plotting_multiple_ephys()

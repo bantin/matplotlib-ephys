@@ -1,6 +1,8 @@
 """Electrophysiology plotting functions"""
+import numpy
 from decimal import Decimal
 import matplotlib.pyplot as plt
+from textwrap import wrap
 
 from .style import *
 
@@ -64,7 +66,7 @@ def compute_figsize(n_plots, title, style):
 
     # TODO: if title I need to add space for it
     if title is not None:
-        figsize[1] += 1. * style.title_fontsize
+        figsize[1] += 1.
 
     # TODO: if spines, I need to add space for them
     if style.show_spines:
@@ -228,6 +230,17 @@ def hide_spines(axis):
     axis.set_yticks([])
 
 
+def draw_title(title, fig, style):
+    """Add a suptitle to the figure. Wrap it at 50 characters if specified in the style."""
+
+    if style.wrap_title:
+        title_format = "\n".join(wrap(title, 50))
+    else:
+        title_format = title
+
+    fig.suptitle(title_format, fontsize=style.title_fontsize)
+
+
 def plot_trace(
     time_series,
     voltage_series,
@@ -261,13 +274,17 @@ def plot_trace(
         figsize = compute_figsize(n_plots=n_plots, title=title, style=style)
         fig, axis = plt.subplots(n_plots, 1, figsize=figsize)
     else:
-        if len(axis) != n_plots:
-            raise ValueError(
-                "The number of axis provided is not the same as the number of series to plot."
-            )
-        if isinstance(axis, list):
+        if isinstance(axis, (list, numpy.ndarray)):
+            if len(axis) != n_plots:
+                raise ValueError(
+                    "The number of axis provided is not the same as the number of series to plot."
+                )
             fig = axis[0].get_figure()
         else:
+            if n_plots > 1 and not style.shared_axis:
+                raise ValueError(
+                    "The total number of traces is greater than 1, but only one axis was provided."
+                )
             fig = axis.get_figure()
 
     if current_series is not None:
@@ -298,13 +315,93 @@ def plot_trace(
         if axis_current:
             draw_scale_bars(axis_current, is_current=True, style=style)
     else:
-        axis_current.set_xlabel("Time (ms)", fontsize=style.label_fontsize)
         axis_voltage.set_xlabel("Time (ms)", fontsize=style.label_fontsize)
-        axis_current.set_ylabel("Current (nA)", fontsize=style.label_fontsize)
         axis_voltage.set_ylabel("Voltage (mV)", fontsize=style.label_fontsize)
+        if axis_current:
+            axis_current.set_xlabel("Time (ms)", fontsize=style.label_fontsize)
+            axis_current.set_ylabel("Current (nA)", fontsize=style.label_fontsize)
 
     if title is not None:
-        fig.suptitle(title, fontsize=style.title_fontsize)
+        draw_title(title, fig, style=style)
+
+    fig.tight_layout()
+
+    return fig, axis
+
+
+def plot_traces(
+    time_series,
+    voltage_series,
+    current_series=None,
+    title=None,
+    axis=None,
+    style="explore",
+):
+    """Plot multiple electrophysiological traces (voltage and, optionally, current).
+
+    Args:
+        time_series (list of list or numpy.array): multiple time series in ms.
+        voltage_series (list of list or numpy.array): multiple voltage series in mV.
+        current_series (list of list or numpy.array): multiple current series in nA.
+        title (str): title of the plot.
+        axis (axis or list of axis): matplotlib axis on which to plot.
+        style (str or Style): if str, specifies the name of the style to use (amongst: "explore",
+            "paper"). If Style, returns the Style object. Warning: these styles are different
+            from the matplotlib styles.
+    """
+
+    if len(time_series) != len(voltage_series):
+        raise ValueError("The number of time series and voltage series must be the same.")
+
+    if current_series is not None:
+        if len(time_series) != len(current_series):
+            raise ValueError("The number of time series and current series must be the same.")
+
+    style = define_style(style)
+
+    n_plots = get_n_plots(
+        n_voltage_series=len(voltage_series),
+        n_current_series=len(current_series) if current_series is not None else 0,
+        shared_axis=style.shared_axis
+    )
+
+    if axis is None:
+        figsize = compute_figsize(n_plots=n_plots, title=title, style=style)
+        fig, axis = plt.subplots(n_plots, 1, figsize=figsize)
+    else:
+        if isinstance(axis, list):
+            if len(axis) != n_plots:
+                raise ValueError(
+                    "The number of axis provided is not the same as the number of series to plot."
+                )
+            fig = axis[0].get_figure()
+        else:
+            if n_plots > 1:
+                raise ValueError(
+                    "The number of traces is greater than 1, but only one axis was provided."
+                )
+            fig = axis.get_figure()
+
+    for i in range(len(time_series)):
+
+        tmp_current_series = current_series[i] if current_series is not None else None
+
+        if tmp_current_series is not None:
+            tmp_axis = axis[i] if style.shared_axis else axis[i*2:i*2+2]
+        else:
+            tmp_axis = axis[i]
+
+        _, _ = plot_trace(
+            time_series[i],
+            voltage_series[i],
+            current_series=tmp_current_series,
+            title=None,
+            axis=tmp_axis,
+            style=style,
+        )
+
+    if title is not None:
+        draw_title(title, fig, style=style)
 
     fig.tight_layout()
 

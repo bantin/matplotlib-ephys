@@ -31,7 +31,9 @@ class ExploreStyle:
     current_color: str = "gray"
     current_alpha: float = 1.
 
+    wrap_title: bool = True
     title_fontsize: int = 14.
+
     scale_bars_fontsize: int = 10.
     label_fontsize: int = 12.
 
@@ -51,6 +53,8 @@ class PaperStyle(ExploreStyle):
     current_color: str = "red"
     current_alpha: float = 0.9
 
+    wrap_title: bool = True
     title_fontsize: int = 14.
+
     scale_bars_fontsize: int = 10.
     label_fontsize: int = 12.
