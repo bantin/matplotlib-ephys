@@ -4,8 +4,8 @@ Introduction
 ============
 
 Matplotlib-ephys is a Python package that does only one thing. 
-It can be used to plot electrophysiological recordings, in the form of voltage and current time series.
-It has however, the interesting capability of being to plot bars, which can be tedious to do manually.
+It can be used to plot electrophysiological recordings, in the form of voltage and current time series, such as patch-clamp or in-silico recordings.
+It has however, the interesting capability of being able to plot bars, which can be tedious to do manually.
 
 Requirements
 ============
