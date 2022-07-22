@@ -3,7 +3,9 @@
 Introduction
 ============
 
-Matplotlib-ephys is a Python package for electrophysiological recordings, in the form of voltage and current time series.
+Matplotlib-ephys is a Python package that does only one thing. 
+It can be used to plot electrophysiological recordings, in the form of voltage and current time series.
+It has however, the interesting capability of being to plot bars, which can be tedious to do manually.
 
 Requirements
 ============
@@ -51,7 +53,7 @@ plt.show()
 plt.close(fig)
 ```
 
-Note that providing current is not mandatory.
+Note that providing current series is not mandatory.
 
 
 Plotting with style
@@ -74,4 +76,17 @@ The existing settings and their default values are:
 * wrap_title (bool, default: True): should the title be wrapped at 50 characters if too long. Put False if you formatted the title yourself.
 * title_fontsize (float, default: 14): fontsize of the title.
 * scale_bars_fontsize (float, default: 10): fontsize of the scale bar labels.
+* scale_bars_linewidth (float, default: 1): width of the scale bars.
 * label_fontsize (float, default: 12): fontsize of the labels.
+
+Drawing scale bars
+===========
+
+Scale bars will be drawn on the plots if the style setting `scale_bars` is set to True.
+
+The `draw_scale_bars` function can also be used as a stand alone function if you have your own figures. To do so, provide the axis object as follows:
+```
+draw_scale_bars(axis=your_axis, is_current=False, style="paper")
+```
+The `is_current` parameter indicate if the data on the axis is current or voltage.
+This function except the x-axis to be time in ms and the y-axis to be the matching voltage or current times series in mV and nA respectively.

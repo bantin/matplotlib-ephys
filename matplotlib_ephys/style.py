@@ -19,15 +19,18 @@ class Style:
             you formatted the title yourself.
         title_fontsize (float): fontsize of the title.
         scale_bars_fontsize (float): fontsize of the scale bar labels.
+        scale_bars_linewidth (float): width of the scale bars.
         label_fontsize (float): fontsize of the labels.
     """
 
     shared_axis: bool = False
     show_spines: bool = True
+
     scale_bars: bool = False
+    scale_bars_fontsize: int = 10.
+    scale_bars_linewidth: float = 1.
 
     linewidth: int = 1.
-
     voltage_color: str = "black"
     voltage_alpha: float = 1.
     current_color: str = "gray"
@@ -35,8 +38,6 @@ class Style:
 
     wrap_title: bool = True
     title_fontsize: int = 14.
-
-    scale_bars_fontsize: int = 10.
     label_fontsize: int = 12.
 
 
@@ -53,6 +54,7 @@ explorer_style = Style(
     wrap_title=True,
     title_fontsize=14.,
     scale_bars_fontsize=10.,
+    scale_bars_linewidth=1.,
     label_fontsize=12.,
 )
 
@@ -69,5 +71,6 @@ paper_style = Style(
     wrap_title=True,
     title_fontsize=14.,
     scale_bars_fontsize=10.,
+    scale_bars_linewidth=1.,
     label_fontsize=12.,
 )

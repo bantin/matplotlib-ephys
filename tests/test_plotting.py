@@ -85,6 +85,17 @@ def test_plotting_multiple_ephys():
         plt.savefig(f"test_plot_multiple_traces_{style}_title.png")
         plt.close(fig)
 
+        # Plot with current and long title
+        fig, axis = plot_traces(
+            data[:, 0],
+            data[:, 2],
+            data[:, 1],
+            style=style,
+            title=["This is an extremely long title that should really "
+                  "not exist but we will see what happens"] * len(data)
+        )
+        plt.savefig(f"test_plot_multiple_traces_{style}_titles.png")
+        plt.close(fig)
 
 test_plotting_single_ephys()
 test_plotting_multiple_ephys()

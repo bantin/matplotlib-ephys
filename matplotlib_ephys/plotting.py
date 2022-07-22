@@ -63,17 +63,16 @@ def compute_figsize(n_plots, title, style):
         n_plots (int): number of plots.
     """
 
-    figsize = [6.4, 4.8 * n_plots]  # TODO: improve this formula
+    figsize = [6.0, 4.0 * n_plots]
 
-    # TODO: if scale bars I need to add space for them
     if style.scale_bars:
         figsize[0] += 1
 
-    # TODO: if title I need to add space for it
-    if title is not None:
-        figsize[1] += 1.
+    if isinstance(title, str):
+        figsize[1] += 0.6
+    elif isinstance(title, list):
+        figsize[1] += 0.3 * len(title)
 
-    # TODO: if spines, I need to add space for them
     if style.show_spines:
         figsize[0] += 1.
         figsize[1] += 1.
@@ -168,7 +167,8 @@ def draw_scale_bars(axis, is_current=False, style="explore"):
     scale_bar_origin = compute_scale_bar_position(axis, time_bar_length, is_current)
 
     # Draw the bars
-    scale_bar_settings = dict(color="black", linewidth=1, clip_on=False)
+    color = style.current_color if is_current else style.voltage_color
+    scale_bar_settings = dict(color=color, linewidth=style.scale_bars_linewidth, clip_on=False)
     axis.plot(
         [scale_bar_origin[0], scale_bar_origin[0] + time_bar_length],
         [scale_bar_origin[1], scale_bar_origin[1]],
@@ -235,15 +235,51 @@ def hide_spines(axis):
     axis.set_yticks([])
 
 
-def draw_title(title, fig, style):
-    """Add a suptitle to the figure. Wrap it at 50 characters if specified in the style."""
+def draw_title(title, axis, style):
+    """Add a title to an axis. Wrap it at 50 characters if wrapping is enable in the style.
+    Note: Does not use suptitle because it does not work well with tight layout."""
 
     if style.wrap_title:
         title_format = "\n".join(wrap(title, 50))
     else:
         title_format = title
 
-    fig.suptitle(title_format, fontsize=style.title_fontsize)
+    axis.set_title(title_format, fontsize=style.title_fontsize)
+
+
+def define_axis(axis, style, title, voltage_series, current_series):
+    """Creates or check the validity of the axis on which the data will be plotted."""
+
+    tmp_v = numpy.asarray(voltage_series)
+    tmp_i = numpy.asarray(current_series) if current_series is not None else None
+
+    n_voltage_series = 1 if tmp_v.ndim == 1 else tmp_v.shape[0]
+
+    if current_series is None:
+        n_current_series = 0
+    else:
+        n_current_series = 1 if tmp_i.ndim == 1 else tmp_i.shape[0]
+
+    n_plots = get_n_plots(n_voltage_series, n_current_series, shared_axis=style.shared_axis)
+
+    if axis is None:
+        figsize = compute_figsize(n_plots=n_plots, title=title, style=style)
+        fig, axis = plt.subplots(n_plots, 1, figsize=figsize)
+    else:
+        if isinstance(axis, (list, numpy.ndarray)):
+            if len(axis) != n_plots:
+                raise ValueError(
+                    "The number of axis provided is not the same as the number of series to plot."
+                )
+            fig = axis[0].get_figure()
+        else:
+            if n_plots > 1 and not style.shared_axis:
+                raise ValueError(
+                    "The total number of traces is greater than 1, but only one axis was provided."
+                )
+            fig = axis.get_figure()
+
+    return fig, axis
 
 
 def plot_trace(
@@ -269,28 +305,7 @@ def plot_trace(
 
     style = define_style(style)
 
-    n_plots = get_n_plots(
-        n_voltage_series=1,
-        n_current_series=1 if current_series is not None else 0,
-        shared_axis=style.shared_axis
-    )
-
-    if axis is None:
-        figsize = compute_figsize(n_plots=n_plots, title=title, style=style)
-        fig, axis = plt.subplots(n_plots, 1, figsize=figsize)
-    else:
-        if isinstance(axis, (list, numpy.ndarray)):
-            if len(axis) != n_plots:
-                raise ValueError(
-                    "The number of axis provided is not the same as the number of series to plot."
-                )
-            fig = axis[0].get_figure()
-        else:
-            if n_plots > 1 and not style.shared_axis:
-                raise ValueError(
-                    "The total number of traces is greater than 1, but only one axis was provided."
-                )
-            fig = axis.get_figure()
+    fig, axis = define_axis(axis, style, title, voltage_series, current_series)
 
     if current_series is not None:
         axis_current = axis if style.shared_axis else axis[0]
@@ -300,8 +315,20 @@ def plot_trace(
         axis_current = None
 
     if current_series is not None:
-        axis_current.plot(time_series, current_series, color=style.current_color, alpha=style.current_alpha, linewidth=style.linewidth)
-    axis_voltage.plot(time_series, voltage_series, color=style.voltage_color, alpha=style.voltage_alpha, linewidth=style.linewidth)
+        axis_current.plot(
+            time_series,
+            current_series,
+            color=style.current_color,
+            alpha=style.current_alpha,
+            linewidth=style.linewidth
+        )
+    axis_voltage.plot(
+        time_series,
+        voltage_series,
+        color=style.voltage_color,
+        alpha=style.voltage_alpha,
+        linewidth=style.linewidth
+    )
 
     # Set the limits of the axis to the limits of the data
     axis_voltage.set_xlim(time_series[0], time_series[-1])
@@ -327,7 +354,8 @@ def plot_trace(
             axis_current.set_ylabel("Current (nA)", fontsize=style.label_fontsize)
 
     if title is not None:
-        draw_title(title, fig, style=style)
+        tmp_axis = axis_voltage if axis_current is None else axis_current
+        draw_title(title, axis=tmp_axis, style=style)
 
     fig.tight_layout()
 
@@ -348,7 +376,8 @@ def plot_traces(
         time_series (list of list or numpy.array): multiple time series in ms.
         voltage_series (list of list or numpy.array): multiple voltage series in mV.
         current_series (list of list or numpy.array): multiple current series in nA.
-        title (str): title of the plot.
+        title (str or list of string): title of the plot or plots. If str, the title is only
+            display on the top axis.
         axis (axis or list of axis): matplotlib axis on which to plot. If None, a new figure is
             created. If current is to be plotted and shared_axis is False, the axis must be a
             list and the current will be plotted on the first axis of the list.
@@ -366,28 +395,16 @@ def plot_traces(
 
     style = define_style(style)
 
-    n_plots = get_n_plots(
-        n_voltage_series=len(voltage_series),
-        n_current_series=len(current_series) if current_series is not None else 0,
-        shared_axis=style.shared_axis
-    )
+    fig, axis = define_axis(axis, style, title, voltage_series, current_series)
 
-    if axis is None:
-        figsize = compute_figsize(n_plots=n_plots, title=title, style=style)
-        fig, axis = plt.subplots(n_plots, 1, figsize=figsize)
-    else:
-        if isinstance(axis, list):
-            if len(axis) != n_plots:
-                raise ValueError(
-                    "The number of axis provided is not the same as the number of series to plot."
-                )
-            fig = axis[0].get_figure()
-        else:
-            if n_plots > 1:
-                raise ValueError(
-                    "The number of traces is greater than 1, but only one axis was provided."
-                )
-            fig = axis.get_figure()
+    if title is None:
+        titles = [None] * len(time_series)
+    elif isinstance(title, str):
+        titles = [title] + [None] * (len(time_series) - 1)
+    elif isinstance(title, list):
+        if len(title) != len(time_series):
+            raise ValueError("The number of titles and time series must be the same.")
+        titles = title
 
     for i in range(len(time_series)):
 
@@ -402,13 +419,10 @@ def plot_traces(
             time_series[i],
             voltage_series[i],
             current_series=tmp_current_series,
-            title=None,
+            title=titles[i],
             axis=tmp_axis,
             style=style,
         )
-
-    if title is not None:
-        draw_title(title, fig, style=style)
 
     fig.tight_layout()
 
