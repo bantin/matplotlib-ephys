@@ -1,10 +1,9 @@
-"""Electrophysiology plotting functions"""
 import numpy
 from decimal import Decimal
 import matplotlib.pyplot as plt
 from textwrap import wrap
 
-from .style import *
+from matplotlib_ephys.style import explorer_style, paper_style, Style
 
 
 def format_float(f):
@@ -129,7 +128,7 @@ def compute_scale_bar_length(axis, is_current=False, bar_length=0.15):
     return time_bar_length, IV_bar_length
 
 
-def compute_scale_bar_position(axis, time_bar_length, is_current=False):
+def compute_scale_bar_position(axis, time_bar_length, is_current=False, location="bottom"):
     """Compute the position of the scale bar.
 
     Args:
@@ -141,16 +140,22 @@ def compute_scale_bar_position(axis, time_bar_length, is_current=False):
     time_limit = axis.get_xlim()
     IV_limit = axis.get_ylim()
 
-    x_pos = time_limit[0] - 1.2 * time_bar_length
-    if is_current:
-        y_pos = IV_limit[0] + 0.3 * (IV_limit[1] - IV_limit[0])
-    else:
-        y_pos = IV_limit[0]
+    x_pos = time_limit[0] - 0.5 * time_bar_length
+    if location == "bottom":
+        if is_current:
+            y_pos = IV_limit[0] + 0.3 * (IV_limit[1] - IV_limit[0])
+        else:
+            y_pos = IV_limit[0]
+    elif location == "top":
+        if is_current:
+            y_pos = IV_limit[1]
+        else:
+            y_pos = IV_limit[1]
 
     return x_pos, y_pos
 
 
-def draw_scale_bars(axis, is_current=False, style="explore"):
+def draw_scale_bars(axis,is_current=False, style="explore", location="bottom"):
     """Draw a ms and nA or mV scale bars on the axis
 
     Args:
@@ -164,7 +169,7 @@ def draw_scale_bars(axis, is_current=False, style="explore"):
     style = define_style(style)
 
     time_bar_length, IV_bar_length = compute_scale_bar_length(axis, is_current)
-    scale_bar_origin = compute_scale_bar_position(axis, time_bar_length, is_current)
+    scale_bar_origin = compute_scale_bar_position(axis, time_bar_length, is_current, location=location)
 
     # Draw the bars
     color = style.current_color if is_current else style.voltage_color
@@ -174,11 +179,18 @@ def draw_scale_bars(axis, is_current=False, style="explore"):
         [scale_bar_origin[1], scale_bar_origin[1]],
         **scale_bar_settings,
     )
-    axis.plot(
-        [scale_bar_origin[0], scale_bar_origin[0]],
-        [scale_bar_origin[1], scale_bar_origin[1] + IV_bar_length],
-        **scale_bar_settings,
-    )
+    if location == "bottom":
+        axis.plot(
+            [scale_bar_origin[0], scale_bar_origin[0]],
+            [scale_bar_origin[1], scale_bar_origin[1] + IV_bar_length],
+            **scale_bar_settings,
+        )
+    elif location == "top":
+        axis.plot(
+            [scale_bar_origin[0], scale_bar_origin[0]],
+            [scale_bar_origin[1], scale_bar_origin[1] - IV_bar_length],
+            **scale_bar_settings,
+        )
 
     # Add the labels at the origin of the bars
     time_label = axis.text(
@@ -211,14 +223,24 @@ def draw_scale_bars(axis, is_current=False, style="explore"):
 
     # Move the labels such that they do not overlap with the scale bars
     text_height = get_text_bbox(time_label, axis).height
-    time_label.set_position(
-        (scale_bar_origin[0] + 0.5 * time_bar_length, scale_bar_origin[1] - 1.8 * text_height)
-    )
 
     text_length = get_text_bbox(iv_label, axis).width
-    iv_label.set_position(
-        (scale_bar_origin[0] - 1.3 * text_length, scale_bar_origin[1] + 0.5 * IV_bar_length)
-    )
+    if location == "bottom":
+        time_label.set_position(
+            (scale_bar_origin[0] + 0.5 * time_bar_length, scale_bar_origin[1] - 1.8 * text_height)
+        )
+
+        iv_label.set_position(
+            (scale_bar_origin[0] - 1.3 * text_length, scale_bar_origin[1] + 0.5 * IV_bar_length)
+        )
+    elif location == "top":
+        time_label.set_position(
+            (scale_bar_origin[0] + 0.5 * time_bar_length, scale_bar_origin[1] + 0.8 * text_height)
+        )
+
+        iv_label.set_position(
+            (scale_bar_origin[0] - 1.1 * text_length, scale_bar_origin[1] - 0.5 * IV_bar_length)
+        )
 
 
 def hide_spines(axis):
@@ -427,3 +449,17 @@ def plot_traces(
     fig.tight_layout()
 
     return fig, axis
+
+# Test draw scalebars with negative data setting location to top
+if __name__ == '__main__':
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+
+    t = np.linspace(0, np.pi, 100)
+    x = np.sin(t) - 1
+    ax.plot(t, x)
+    draw_scale_bars(ax, location='top', style='paper')
+    hide_spines(ax)
+    plt.show()
