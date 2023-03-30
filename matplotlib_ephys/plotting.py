@@ -155,7 +155,7 @@ def compute_scale_bar_position(axis, time_bar_length, is_current=False, location
     return x_pos, y_pos
 
 
-def draw_scale_bars(axis,is_current=False, style="explore", location="bottom"):
+def draw_scale_bars(axis,is_current=False, style="explore", location="bottom", IV_bar_length=None):
     """Draw a ms and nA or mV scale bars on the axis
 
     Args:
@@ -168,7 +168,11 @@ def draw_scale_bars(axis,is_current=False, style="explore", location="bottom"):
 
     style = define_style(style)
 
-    time_bar_length, IV_bar_length = compute_scale_bar_length(axis, is_current)
+    if IV_bar_length:
+        time_bar_length, _ = compute_scale_bar_length(axis, is_current)
+    else:
+        time_bar_length, IV_bar_length = compute_scale_bar_length(axis, is_current)
+
     scale_bar_origin = compute_scale_bar_position(axis, time_bar_length, is_current, location=location)
 
     # Draw the bars
